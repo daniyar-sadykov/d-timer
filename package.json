@@ -1,0 +1,41 @@
+{
+  "name": "d-timer",
+  "version": "1.0.0",
+  "description": "Minimalist work timer with Telegram reporting",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "node launcher.js",
+    "build": "electron-builder --win --x64",
+    "build:portable": "electron-builder --win portable"
+  },
+  "devDependencies": {
+    "electron": "^40.6.0",
+    "electron-builder": "^26.8.1"
+  },
+  "build": {
+    "appId": "com.daniyar.dtimer",
+    "productName": "D-Timer",
+    "directories": {
+      "output": "dist"
+    },
+    "icon": "assets/icon.png",
+    "files": [
+      "src/**/*",
+      "assets/**/*"
+    ],
+    "extraFiles": [
+      {
+        "from": "config.json",
+        "to": "config.json"
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": ["x64"]
+        }
+      ]
+    }
+  }
+}

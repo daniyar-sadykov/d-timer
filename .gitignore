@@ -1,0 +1,8 @@
+node_modules/
+dist/
+config.json
+*.log
+.DS_Store
+Thumbs.db
+d-timer_icon*.png
+.claude/

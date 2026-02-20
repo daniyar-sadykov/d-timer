@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self';
+                 style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+                 font-src https://fonts.gstatic.com;
+                 script-src 'self';
+                 connect-src 'none'" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>D-Timer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <div class="drag-region">
+
+    <!-- ── Main Timer Card ── -->
+    <div class="card" id="main-card">
+
+      <div class="window-controls no-drag">
+        <button class="ctrl-btn" id="btn-settings" title="Settings">⚙</button>
+        <button class="ctrl-btn ctrl-close" id="btn-close" title="Minimize to tray">×</button>
+      </div>
+
+      <div class="timer-display" id="timer-display">00:00:00</div>
+      <div class="earnings-display" id="earnings-display">$0.00</div>
+
+      <div class="controls no-drag">
+        <button class="btn-ctrl btn-start" id="btn-start" title="Start">▶</button>
+        <button class="btn-ctrl btn-pause" id="btn-pause" title="Pause" disabled>⏸</button>
+        <button class="btn-ctrl btn-stop"  id="btn-stop"  title="Stop"  disabled>⏹</button>
+      </div>
+
+    </div>
+
+    <!-- ── Settings Panel (slides over the card) ── -->
+    <div class="settings-panel" id="settings-panel">
+
+      <div class="settings-header">
+        <span class="settings-title">SETTINGS</span>
+        <button class="ctrl-btn ctrl-close no-drag" id="btn-close-settings" title="Close">×</button>
+      </div>
+
+      <div class="field-group">
+        <label for="inp-rate">Hourly Rate ($)</label>
+        <input type="number" id="inp-rate" min="1" step="0.5" placeholder="20" />
+      </div>
+
+      <div class="field-group">
+        <label for="inp-chat">Telegram Chat ID</label>
+        <input type="text" id="inp-chat" placeholder="e.g. 123456789" />
+        <span class="hint">
+          Message <a class="hint-link" id="link-chatid-help" href="#">@userinfobot</a> on Telegram
+        </span>
+      </div>
+
+      <div class="field-group">
+        <label for="inp-token">Bot Token</label>
+        <input type="text" id="inp-token" placeholder="123456:ABC-..." />
+      </div>
+
+      <div class="settings-actions no-drag">
+        <button class="btn-save" id="btn-save-settings">Save</button>
+        <button class="btn-cancel" id="btn-cancel-settings">Cancel</button>
+      </div>
+
+      <div class="settings-status" id="settings-status"></div>
+
+    </div>
+
+  </div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>
