@@ -11,7 +11,8 @@ const {
   shell
 } = require('electron');
 const path   = require('path');
-const config = require('./config');
+const config  = require('./config');
+const worklog = require('./worklog');
 const { sendTelegramMessage } = require('./telegram');
 
 let mainWindow = null;
@@ -133,6 +134,20 @@ ipcMain.handle('telegram:send', async (event, message) => {
     return { ok: false, error: 'bot_token or chat_id not configured. Open Settings (⚙) to add your Telegram Chat ID.' };
   }
   return sendTelegramMessage(cfg.bot_token, cfg.chat_id, message);
+});
+
+// ─── Worklog Handlers ──────────────────────────────────────────────────────
+ipcMain.handle('worklog:get', () => worklog.getToday());
+
+ipcMain.handle('worklog:add', (event, text) => worklog.addEntry(text));
+
+ipcMain.handle('worklog:delete', (event, id) => worklog.deleteEntry(id));
+
+ipcMain.handle('window:resize', (event, width, height) => {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  mainWindow.setResizable(true);
+  mainWindow.setSize(width, height);
+  mainWindow.setResizable(false);
 });
 
 ipcMain.handle('shell:open', (event, url) => {

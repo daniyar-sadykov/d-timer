@@ -21,7 +21,7 @@
 /* ─── Base ───────────────────────────────────────────────────────────────────── */
 html, body {
   width: 300px;
-  height: 200px;
+  height: 100%;
   overflow: hidden;
   background: var(--bg);
   color: var(--text-main);
@@ -135,7 +135,7 @@ html, body {
 .controls {
   display: flex;
   gap: 14px;
-  margin-top: 4px;
+  margin-top: 10px;
 }
 
 .btn-ctrl {
@@ -337,6 +337,193 @@ html, body {
 }
 .settings-status.error {
   color: var(--danger);
+}
+
+/* ─── Work Log Panel ─────────────────────────────────────────────────────────── */
+.worklog-panel {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 12px 16px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 20;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+
+.worklog-panel.open {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: all;
+}
+
+/* ─── Work Log Header ────────────────────────────────────────────────────────── */
+.worklog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  -webkit-app-region: no-drag;
+  flex-shrink: 0;
+}
+
+.worklog-title {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  color: var(--text-dim);
+}
+
+.worklog-header-actions {
+  display: flex;
+  gap: 5px;
+}
+
+/* ─── Work Log List ──────────────────────────────────────────────────────────── */
+.worklog-list {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 0;
+}
+
+.worklog-empty {
+  font-size: 11px;
+  color: #2a2a2a;
+  text-align: center;
+  padding: 24px 0;
+  letter-spacing: 0.5px;
+}
+
+.worklog-entry {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 5px 8px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: 8px;
+  transition: background 0.15s;
+  flex-shrink: 0;
+}
+
+.worklog-entry:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.worklog-entry-time {
+  font-size: 10px;
+  color: var(--text-dim);
+  white-space: nowrap;
+  line-height: 1.5;
+  flex-shrink: 0;
+}
+
+.worklog-entry-text {
+  font-size: 11px;
+  color: var(--text-main);
+  line-height: 1.5;
+  flex: 1;
+  word-break: break-word;
+}
+
+.worklog-entry-del {
+  width: 16px;
+  height: 16px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: #333;
+  font-size: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: color 0.15s, background 0.15s;
+  -webkit-app-region: no-drag;
+  margin-top: 1px;
+}
+
+.worklog-entry-del:hover {
+  background: rgba(255, 80, 80, 0.15);
+  color: var(--danger);
+}
+
+/* ─── Work Log Input ─────────────────────────────────────────────────────────── */
+.worklog-input-row {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.worklog-input-row input {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-main);
+  font-family: var(--font);
+  font-size: 11px;
+  padding: 6px 10px;
+  outline: none;
+  transition: border-color 0.2s, background 0.2s;
+  -webkit-app-region: no-drag;
+}
+
+.worklog-input-row input:focus {
+  border-color: rgba(127, 255, 140, 0.35);
+  background: rgba(127, 255, 140, 0.03);
+}
+
+.worklog-input-row input::placeholder {
+  color: #2e2e2e;
+}
+
+.btn-add-worklog {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid rgba(127, 255, 140, 0.25);
+  background: var(--accent-dim);
+  color: var(--accent);
+  font-size: 16px;
+  font-family: var(--font);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s, transform 0.15s;
+  flex-shrink: 0;
+}
+
+.btn-add-worklog:hover {
+  background: rgba(127, 255, 140, 0.2);
+  transform: scale(1.05);
+}
+
+.btn-add-worklog:active {
+  transform: scale(0.95);
+}
+
+/* ─── Work Log Status ────────────────────────────────────────────────────────── */
+.worklog-status {
+  font-size: 9px;
+  min-height: 12px;
+  text-align: center;
+  color: var(--accent);
+  letter-spacing: 0.5px;
+  flex-shrink: 0;
 }
 
 /* ─── Scrollbar ──────────────────────────────────────────────────────────────── */

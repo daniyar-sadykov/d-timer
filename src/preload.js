@@ -19,6 +19,18 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('shell:open', url),
 
   closeWindow: () =>
-    ipcRenderer.invoke('window:close')
+    ipcRenderer.invoke('window:close'),
+
+  getWorklog: () =>
+    ipcRenderer.invoke('worklog:get'),
+
+  addWorklog: (text) =>
+    ipcRenderer.invoke('worklog:add', text),
+
+  deleteWorklog: (id) =>
+    ipcRenderer.invoke('worklog:delete', id),
+
+  resizeWindow: (w, h) =>
+    ipcRenderer.invoke('window:resize', w, h)
 
 });

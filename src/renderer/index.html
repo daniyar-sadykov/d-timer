@@ -23,6 +23,7 @@
     <div class="card" id="main-card">
 
       <div class="window-controls no-drag">
+        <button class="ctrl-btn" id="btn-worklog" title="Work Log" style="display:none">✎</button>
         <button class="ctrl-btn" id="btn-settings" title="Settings">⚙</button>
         <button class="ctrl-btn ctrl-close" id="btn-close" title="Minimize to tray">×</button>
       </div>
@@ -70,6 +71,30 @@
       </div>
 
       <div class="settings-status" id="settings-status"></div>
+
+    </div>
+
+    <!-- ── Work Log Panel (slides over the card) ── -->
+    <div class="worklog-panel" id="worklog-panel">
+
+      <div class="worklog-header">
+        <span class="worklog-title">WORK LOG</span>
+        <div class="worklog-header-actions no-drag">
+          <button class="ctrl-btn" id="btn-copy-worklog" title="Copy to clipboard">⎘</button>
+          <button class="ctrl-btn ctrl-close" id="btn-close-worklog" title="Close">×</button>
+        </div>
+      </div>
+
+      <div class="worklog-list" id="worklog-list">
+        <div class="worklog-empty" id="worklog-empty">No entries yet</div>
+      </div>
+
+      <div class="worklog-input-row no-drag">
+        <input type="text" id="inp-worklog" placeholder="What did you do?" maxlength="200" />
+        <button class="btn-add-worklog" id="btn-add-worklog" title="Add entry">+</button>
+      </div>
+
+      <div class="worklog-status" id="worklog-status"></div>
 
     </div>
 

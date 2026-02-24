@@ -8,7 +8,9 @@ const state = {
   sessionStart:  null,      // Wall-clock time of the very first Start press
   intervalId:    null,
   hourlyRate:    20,
-  settingsOpen:  false
+  settingsOpen:  false,
+  worklogOpen:   false,
+  worklogEntries: []        // Today's entries cache
 };
 
 // ─── DOM ─────────────────────────────────────────────────────────────────────
@@ -29,6 +31,17 @@ const btnCancelSettings = document.getElementById('btn-cancel-settings');
 const settingsStatus    = document.getElementById('settings-status');
 const linkChatHelp      = document.getElementById('link-chatid-help');
 
+// Worklog DOM
+const btnWorklog        = document.getElementById('btn-worklog');
+const worklogPanel      = document.getElementById('worklog-panel');
+const worklogList       = document.getElementById('worklog-list');
+const worklogEmpty      = document.getElementById('worklog-empty');
+const btnCloseWorklog   = document.getElementById('btn-close-worklog');
+const btnCopyWorklog    = document.getElementById('btn-copy-worklog');
+const inpWorklog        = document.getElementById('inp-worklog');
+const btnAddWorklog     = document.getElementById('btn-add-worklog');
+const worklogStatus     = document.getElementById('worklog-status');
+
 // ─── Init ─────────────────────────────────────────────────────────────────────
 async function init() {
   const cfg = await window.electronAPI.getConfig();
@@ -37,6 +50,9 @@ async function init() {
   inpChat.value    = cfg.chat_id     || '';
   inpToken.value   = cfg.bot_token   || '';
   updateDisplay(0);
+
+  // Pre-load today's worklog entries for Telegram report
+  state.worklogEntries = await window.electronAPI.getWorklog();
 }
 
 init();
@@ -90,6 +106,7 @@ btnStart.addEventListener('click', () => {
   btnStop.disabled     = false;
   btnPause.textContent = '⏸';
   btnPause.title       = 'Pause';
+  btnWorklog.style.display = '';
 });
 
 // ─── Button: Pause ────────────────────────────────────────────────────────────
@@ -139,7 +156,12 @@ btnStop.addEventListener('click', async () => {
   btnStart.title       = 'Start';
   btnPause.disabled    = true;
   btnStop.disabled     = true;
+  btnWorklog.style.display = 'none';
+  if (state.worklogOpen) closeWorklog();
   updateDisplay(0);
+
+  // Refresh worklog entries before building report
+  state.worklogEntries = await window.electronAPI.getWorklog();
 
   // Send Telegram report (non-blocking)
   const msg    = buildReport(sessionStart, sessionEnd, finalMs);
@@ -163,7 +185,7 @@ function buildReport(start, end, elapsedMs) {
     weekday: 'short', year: 'numeric', month: 'short', day: 'numeric'
   });
 
-  return [
+  const lines = [
     `⏱ *Рабочая сессия завершена*`,
     ``,
     `📅 ${fmtDate(start)}`,
@@ -171,11 +193,21 @@ function buildReport(start, end, elapsedMs) {
     `🕑 Конец:   \`${fmtTime(end)}\``,
     `⏳ Время:   \`${formatTime(elapsedMs)}\``,
     `💵 Заработано: \`$${calcEarnings(elapsedMs)}\` @ $${state.hourlyRate}/ч`
-  ].join('\n');
+  ];
+
+  if (state.worklogEntries && state.worklogEntries.length > 0) {
+    lines.push('', '📝 *Выполнено:*');
+    state.worklogEntries.forEach(e => {
+      lines.push(`• ${e.text}`);
+    });
+  }
+
+  return lines.join('\n');
 }
 
 // ─── Settings ─────────────────────────────────────────────────────────────────
 function openSettings() {
+  if (state.worklogOpen) closeWorklog();
   state.settingsOpen = true;
   settingsPanel.classList.add('open');
 }
@@ -230,6 +262,121 @@ function setSettingsStatus(msg, isError = false) {
 linkChatHelp.addEventListener('click', (e) => {
   e.preventDefault();
   window.electronAPI.openExternal('https://t.me/userinfobot');
+});
+
+// ─── Work Log ────────────────────────────────────────────────────────────────
+
+const WIN_W = 300;
+const WIN_H_NORMAL  = 200;
+const WIN_H_WORKLOG = 380;
+
+async function openWorklog() {
+  if (state.settingsOpen) closeSettings();
+  state.worklogOpen = true;
+
+  // Resize first, then show panel after a frame so layout is settled
+  await window.electronAPI.resizeWindow(WIN_W, WIN_H_WORKLOG);
+  await refreshWorklog();
+  requestAnimationFrame(() => {
+    worklogPanel.classList.add('open');
+    inpWorklog.focus();
+  });
+}
+
+async function closeWorklog() {
+  state.worklogOpen = false;
+  worklogPanel.classList.remove('open');
+
+  // Wait for fade-out, then shrink
+  setTimeout(async () => {
+    await window.electronAPI.resizeWindow(WIN_W, WIN_H_NORMAL);
+  }, 250);
+  setWorklogStatus('');
+}
+
+async function refreshWorklog() {
+  const entries = await window.electronAPI.getWorklog();
+  state.worklogEntries = entries;
+  renderWorklogEntries(entries);
+}
+
+function renderWorklogEntries(entries) {
+  // Remove all entry elements but keep the empty placeholder
+  worklogList.querySelectorAll('.worklog-entry').forEach(el => el.remove());
+
+  if (!entries || entries.length === 0) {
+    worklogEmpty.style.display = '';
+    return;
+  }
+  worklogEmpty.style.display = 'none';
+
+  entries.forEach(entry => {
+    const row = document.createElement('div');
+    row.className = 'worklog-entry';
+
+    const timeSpan = document.createElement('span');
+    timeSpan.className = 'worklog-entry-time';
+    timeSpan.textContent = entry.time;
+
+    const textSpan = document.createElement('span');
+    textSpan.className = 'worklog-entry-text';
+    textSpan.textContent = entry.text;
+
+    const delBtn = document.createElement('button');
+    delBtn.className = 'worklog-entry-del';
+    delBtn.textContent = '×';
+    delBtn.title = 'Delete';
+    delBtn.addEventListener('click', async () => {
+      const updated = await window.electronAPI.deleteWorklog(entry.id);
+      state.worklogEntries = updated;
+      renderWorklogEntries(updated);
+    });
+
+    row.append(timeSpan, textSpan, delBtn);
+    worklogList.appendChild(row);
+  });
+}
+
+async function addWorklogEntry() {
+  const text = inpWorklog.value.trim();
+  if (!text) return;
+
+  const updated = await window.electronAPI.addWorklog(text);
+  state.worklogEntries = updated;
+  renderWorklogEntries(updated);
+  inpWorklog.value = '';
+  inpWorklog.focus();
+}
+
+function copyWorklog() {
+  if (!state.worklogEntries || state.worklogEntries.length === 0) {
+    setWorklogStatus('Nothing to copy');
+    setTimeout(() => setWorklogStatus(''), 1500);
+    return;
+  }
+
+  const lines = state.worklogEntries.map(e => e.text).join('\n');
+  navigator.clipboard.writeText(lines).then(() => {
+    setWorklogStatus('Copied ✓');
+    setTimeout(() => setWorklogStatus(''), 1500);
+  });
+}
+
+function setWorklogStatus(msg) {
+  worklogStatus.textContent = msg;
+}
+
+btnWorklog.addEventListener('click', () => {
+  if (state.worklogOpen) closeWorklog();
+  else openWorklog();
+});
+
+btnCloseWorklog.addEventListener('click', closeWorklog);
+btnAddWorklog.addEventListener('click', addWorklogEntry);
+btnCopyWorklog.addEventListener('click', copyWorklog);
+
+inpWorklog.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') addWorklogEntry();
 });
 
 // ─── Minimize to Tray ─────────────────────────────────────────────────────────
