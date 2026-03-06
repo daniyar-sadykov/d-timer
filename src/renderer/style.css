@@ -33,7 +33,6 @@ html, body {
 .drag-region {
   width: 100%;
   height: 100%;
-  -webkit-app-region: drag;
   position: relative;
   display: flex;
   align-items: center;
@@ -61,6 +60,7 @@ html, body {
     0 8px 32px rgba(0, 0, 0, 0.7);
   position: relative;
   transition: opacity 0.25s;
+  -webkit-app-region: drag;
 }
 
 /* ─── Window Controls ────────────────────────────────────────────────────────── */
@@ -213,6 +213,7 @@ html, body {
   opacity: 0;
   pointer-events: none;
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s;
+  -webkit-app-region: drag;
 }
 
 .settings-panel.open {
@@ -341,7 +342,7 @@ html, body {
 
 /* ─── Work Log Panel ─────────────────────────────────────────────────────────── */
 .worklog-panel {
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 0;
   width: 100%;
@@ -358,6 +359,7 @@ html, body {
   visibility: hidden;
   pointer-events: none;
   transition: opacity 0.25s ease;
+  -webkit-app-region: no-drag;
 }
 
 .worklog-panel.open {

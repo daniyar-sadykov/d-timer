@@ -21,6 +21,7 @@ const btnPause          = document.getElementById('btn-pause');
 const btnStop           = document.getElementById('btn-stop');
 const btnSettings       = document.getElementById('btn-settings');
 const btnClose          = document.getElementById('btn-close');
+const mainCard          = document.getElementById('main-card');
 const settingsPanel     = document.getElementById('settings-panel');
 const btnCloseSettings  = document.getElementById('btn-close-settings');
 const inpRate           = document.getElementById('inp-rate');
@@ -274,6 +275,9 @@ async function openWorklog() {
   if (state.settingsOpen) closeSettings();
   state.worklogOpen = true;
 
+  // Hide card so its drag region doesn't block mouse events over the worklog
+  mainCard.style.visibility = 'hidden';
+
   // Resize first, then show panel after a frame so layout is settled
   await window.electronAPI.resizeWindow(WIN_W, WIN_H_WORKLOG);
   await refreshWorklog();
@@ -286,6 +290,9 @@ async function openWorklog() {
 async function closeWorklog() {
   state.worklogOpen = false;
   worklogPanel.classList.remove('open');
+
+  // Restore card visibility
+  mainCard.style.visibility = '';
 
   // Wait for fade-out, then shrink
   setTimeout(async () => {
