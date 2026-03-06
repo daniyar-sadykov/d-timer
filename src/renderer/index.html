@@ -24,6 +24,7 @@
 
       <div class="window-controls no-drag">
         <button class="ctrl-btn" id="btn-worklog" title="Work Log" style="display:none">✎</button>
+        <button class="ctrl-btn" id="btn-notes" title="Notes">✏</button>
         <button class="ctrl-btn" id="btn-settings" title="Settings">⚙</button>
         <button class="ctrl-btn" id="btn-minimize" title="Minimize">─</button>
         <button class="ctrl-btn ctrl-close" id="btn-close" title="Close">×</button>
@@ -96,6 +97,30 @@
     </div>
 
     <div class="worklog-status" id="worklog-status"></div>
+
+  </div>
+
+  <!-- ── Notes Panel (outside drag-region to fix scroll) ── -->
+  <div class="notes-panel" id="notes-panel">
+
+    <div class="notes-header">
+      <button class="ctrl-btn" id="btn-close-notes" title="Back">←</button>
+      <span class="notes-title">NOTES</span>
+    </div>
+
+    <div class="notes-type-tabs">
+      <button class="notes-tab active" data-type="bug" id="tab-bug">Bugs</button>
+      <button class="notes-tab" data-type="feature" id="tab-feature">Features</button>
+    </div>
+
+    <div class="notes-list" id="notes-list">
+      <div class="notes-empty" id="notes-empty">No notes yet</div>
+    </div>
+
+    <div class="notes-input-row">
+      <input type="text" id="inp-notes" placeholder="Describe bug or feature..." maxlength="500" />
+      <button class="btn-add-notes" id="btn-add-note" title="Add note">+</button>
+    </div>
 
   </div>
 

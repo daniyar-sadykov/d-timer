@@ -406,6 +406,127 @@ inpWorklog.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') addWorklogEntry();
 });
 
+// ─── Notes ────────────────────────────────────────────────────────────────────
+
+const WIN_H_NOTES = 380;
+
+const notesPanel     = document.getElementById('notes-panel');
+const notesList      = document.getElementById('notes-list');
+const notesEmpty     = document.getElementById('notes-empty');
+const btnNotes       = document.getElementById('btn-notes');
+const btnCloseNotes  = document.getElementById('btn-close-notes');
+const inpNotes       = document.getElementById('inp-notes');
+const btnAddNote     = document.getElementById('btn-add-note');
+const tabBug         = document.getElementById('tab-bug');
+const tabFeature     = document.getElementById('tab-feature');
+
+const notesState = {
+  open: false,
+  entries: [],
+  activeType: 'bug'
+};
+
+async function openNotes() {
+  if (state.settingsOpen) closeSettings();
+  if (state.worklogOpen) closeWorklog();
+  notesState.open = true;
+
+  mainCard.style.visibility = 'hidden';
+  hideWindowControls();
+
+  await window.electronAPI.resizeWindow(WIN_W, WIN_H_NOTES);
+  notesState.entries = await window.electronAPI.getNotes();
+  renderNotes();
+  requestAnimationFrame(() => {
+    notesPanel.classList.add('open');
+    inpNotes.focus();
+  });
+}
+
+async function closeNotes() {
+  notesState.open = false;
+  notesPanel.classList.remove('open');
+
+  mainCard.style.visibility = '';
+  showWindowControls();
+
+  setTimeout(async () => {
+    await window.electronAPI.resizeWindow(WIN_W, WIN_H_NORMAL);
+  }, 250);
+}
+
+function renderNotes() {
+  notesList.querySelectorAll('.notes-entry').forEach(el => el.remove());
+
+  const filtered = notesState.entries.filter(e => e.type === notesState.activeType);
+
+  if (filtered.length === 0) {
+    notesEmpty.style.display = '';
+    return;
+  }
+  notesEmpty.style.display = 'none';
+
+  filtered.forEach(entry => {
+    const row = document.createElement('div');
+    row.className = 'notes-entry';
+
+    const dateSpan = document.createElement('span');
+    dateSpan.className = 'notes-entry-date';
+    dateSpan.textContent = entry.date;
+
+    const textSpan = document.createElement('span');
+    textSpan.className = 'notes-entry-text';
+    textSpan.textContent = entry.text;
+    textSpan.addEventListener('click', () => {
+      row.classList.toggle('expanded');
+    });
+
+    const delBtn = document.createElement('button');
+    delBtn.className = 'notes-entry-del';
+    delBtn.textContent = '\u00d7';
+    delBtn.title = 'Delete';
+    delBtn.addEventListener('click', async () => {
+      notesState.entries = await window.electronAPI.deleteNote(entry.id);
+      renderNotes();
+    });
+
+    row.append(dateSpan, textSpan, delBtn);
+    notesList.appendChild(row);
+  });
+}
+
+async function addNote() {
+  const text = inpNotes.value.trim();
+  if (!text) return;
+
+  notesState.entries = await window.electronAPI.addNote(text, notesState.activeType);
+  renderNotes();
+  inpNotes.value = '';
+  inpNotes.focus();
+}
+
+function setActiveTab(type) {
+  notesState.activeType = type;
+  tabBug.classList.toggle('active', type === 'bug');
+  tabFeature.classList.toggle('active', type === 'feature');
+  renderNotes();
+}
+
+btnNotes.addEventListener('click', () => {
+  if (notesState.open) closeNotes();
+  else openNotes();
+});
+
+btnCloseNotes.addEventListener('click', closeNotes);
+btnAddNote.addEventListener('click', addNote);
+
+inpNotes.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') addNote();
+});
+
+tabBug.addEventListener('click', () => setActiveTab('bug'));
+tabFeature.addEventListener('click', () => setActiveTab('feature'));
+
 // ─── Minimize ─────────────────────────────────────────────────────────────────
 btnMinimize.addEventListener('click', () => {
   window.electronAPI.minimizeWindow();

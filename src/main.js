@@ -13,6 +13,7 @@ const {
 const path   = require('path');
 const config  = require('./config');
 const worklog = require('./worklog');
+const notes   = require('./notes');
 const { sendTelegramMessage } = require('./telegram');
 
 let mainWindow = null;
@@ -143,6 +144,13 @@ ipcMain.handle('worklog:get', () => worklog.getToday());
 ipcMain.handle('worklog:add', (event, text) => worklog.addEntry(text));
 
 ipcMain.handle('worklog:delete', (event, id) => worklog.deleteEntry(id));
+
+// ─── Notes Handlers ───────────────────────────────────────────────────────
+ipcMain.handle('notes:get', () => notes.getAll());
+
+ipcMain.handle('notes:add', (event, text, type) => notes.addNote(text, type));
+
+ipcMain.handle('notes:delete', (event, id) => notes.deleteNote(id));
 
 ipcMain.handle('window:resize', (event, width, height) => {
   if (!mainWindow || mainWindow.isDestroyed()) return;

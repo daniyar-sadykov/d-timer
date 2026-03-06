@@ -34,6 +34,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('window:resize', w, h),
 
   minimizeWindow: () =>
-    ipcRenderer.invoke('window:minimize')
+    ipcRenderer.invoke('window:minimize'),
+
+  getNotes: () =>
+    ipcRenderer.invoke('notes:get'),
+
+  addNote: (text, type) =>
+    ipcRenderer.invoke('notes:add', text, type),
+
+  deleteNote: (id) =>
+    ipcRenderer.invoke('notes:delete', id)
 
 });
