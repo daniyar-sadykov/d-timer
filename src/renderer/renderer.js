@@ -355,6 +355,10 @@ function renderWorklogEntries(entries) {
       renderWorklogEntries(updated);
     });
 
+    textSpan.addEventListener('click', () => {
+      row.classList.toggle('expanded');
+    });
+
     row.append(timeSpan, textSpan, delBtn);
     worklogList.appendChild(row);
   });
