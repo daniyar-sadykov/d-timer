@@ -39,6 +39,7 @@ function createWindow() {
     height:          WIN_H,
     x:               startX,
     y:               startY,
+    icon:            path.join(__dirname, '..', 'assets', 'icon.ico'),
     frame:           false,
     transparent:     false,
     alwaysOnTop:     true,
@@ -160,6 +161,11 @@ ipcMain.handle('shell:open', (event, url) => {
 
 ipcMain.handle('window:close', () => {
   app.quit();
+});
+
+ipcMain.handle('window:minimize', () => {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  mainWindow.minimize();
 });
 
 // ─── Single Instance Lock ─────────────────────────────────────────────────────

@@ -386,6 +386,11 @@ inpWorklog.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') addWorklogEntry();
 });
 
+// ─── Minimize ─────────────────────────────────────────────────────────────────
+document.getElementById('btn-minimize').addEventListener('click', () => {
+  window.electronAPI.minimizeWindow();
+});
+
 // ─── Close ───────────────────────────────────────────────────────────────────
 btnClose.addEventListener('click', () => {
   window.electronAPI.closeWindow();

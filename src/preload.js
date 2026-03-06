@@ -31,6 +31,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('worklog:delete', id),
 
   resizeWindow: (w, h) =>
-    ipcRenderer.invoke('window:resize', w, h)
+    ipcRenderer.invoke('window:resize', w, h),
+
+  minimizeWindow: () =>
+    ipcRenderer.invoke('window:minimize')
 
 });
