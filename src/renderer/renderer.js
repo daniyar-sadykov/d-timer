@@ -207,16 +207,30 @@ function buildReport(start, end, elapsedMs) {
 }
 
 // ─── Settings ─────────────────────────────────────────────────────────────────
+const btnMinimize = document.getElementById('btn-minimize');
+
+function hideWindowControls() {
+  btnClose.style.display = 'none';
+  btnMinimize.style.display = 'none';
+}
+
+function showWindowControls() {
+  btnClose.style.display = '';
+  btnMinimize.style.display = '';
+}
+
 function openSettings() {
   if (state.worklogOpen) closeWorklog();
   state.settingsOpen = true;
   settingsPanel.classList.add('open');
+  hideWindowControls();
 }
 
 function closeSettings() {
   state.settingsOpen = false;
   settingsPanel.classList.remove('open');
   setSettingsStatus('');
+  showWindowControls();
 }
 
 btnSettings.addEventListener('click', () => {
@@ -277,6 +291,7 @@ async function openWorklog() {
 
   // Hide card so its drag region doesn't block mouse events over the worklog
   mainCard.style.visibility = 'hidden';
+  hideWindowControls();
 
   // Resize first, then show panel after a frame so layout is settled
   await window.electronAPI.resizeWindow(WIN_W, WIN_H_WORKLOG);
@@ -291,8 +306,9 @@ async function closeWorklog() {
   state.worklogOpen = false;
   worklogPanel.classList.remove('open');
 
-  // Restore card visibility
+  // Restore card visibility and window controls
   mainCard.style.visibility = '';
+  showWindowControls();
 
   // Wait for fade-out, then shrink
   setTimeout(async () => {
@@ -387,7 +403,7 @@ inpWorklog.addEventListener('keydown', (e) => {
 });
 
 // ─── Minimize ─────────────────────────────────────────────────────────────────
-document.getElementById('btn-minimize').addEventListener('click', () => {
+btnMinimize.addEventListener('click', () => {
   window.electronAPI.minimizeWindow();
 });
 

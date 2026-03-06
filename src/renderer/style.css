@@ -384,10 +384,6 @@ html, body {
   color: var(--text-dim);
 }
 
-.worklog-header-actions {
-  display: flex;
-  gap: 5px;
-}
 
 /* ─── Work Log List ──────────────────────────────────────────────────────────── */
 .worklog-list {
