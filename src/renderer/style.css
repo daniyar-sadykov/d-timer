@@ -110,17 +110,19 @@ html, body {
 }
 
 .mode-tab {
-  width: 20px;
-  height: 20px;
-  border: none;
-  border-radius: 50%;
+  min-width: 26px;
+  height: 18px;
+  padding: 0 6px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
   cursor: pointer;
-  font-size: 11px;
-  line-height: 20px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1px;
   text-align: center;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.04);
   color: var(--text-dim);
-  transition: background 0.2s, color 0.2s, transform 0.15s;
+  transition: background 0.2s, color 0.2s, transform 0.15s, border-color 0.2s;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -136,11 +138,29 @@ html, body {
 .mode-tab.active {
   background: var(--accent-dim);
   color: var(--accent);
+  border-color: rgba(127, 255, 140, 0.3);
 }
 
 .mode-tab:disabled {
   opacity: 0.3;
   cursor: not-allowed;
+}
+
+.mode-tab.tab-running::after {
+  content: '';
+  display: inline-block;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--accent);
+  margin-left: 3px;
+  vertical-align: middle;
+  animation: dot-pulse 1s ease-in-out infinite;
+}
+
+@keyframes dot-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.3; }
 }
 
 /* ─── Timer Display ──────────────────────────────────────────────────────────── */
