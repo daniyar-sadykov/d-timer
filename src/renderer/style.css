@@ -166,6 +166,7 @@ html, body {
 
 .timer-display.editable {
   cursor: pointer;
+  -webkit-app-region: no-drag;
 }
 
 .timer-display.editable:hover {
@@ -186,6 +187,34 @@ html, body {
     text-shadow: 0 0 32px rgba(127, 255, 140, 0.9);
     transform: scale(1.05);
   }
+}
+
+/* ─── Timer Input (inline editor) ────────────────────────────────────────────── */
+.timer-input {
+  display: none;
+  font-family: var(--font);
+  font-size: 36px;
+  font-weight: 300;
+  letter-spacing: 2px;
+  color: var(--accent);
+  background: rgba(127, 255, 140, 0.05);
+  border: 1px solid rgba(127, 255, 140, 0.35);
+  border-radius: 8px;
+  padding: 4px 10px;
+  width: 220px;
+  text-align: center;
+  outline: none;
+  font-variant-numeric: tabular-nums;
+  -webkit-app-region: no-drag;
+  margin-top: 16px;
+}
+
+.timer-input.active {
+  display: block;
+}
+
+.timer-display.editing {
+  display: none;
 }
 
 /* ─── Earnings Display ───────────────────────────────────────────────────────── */

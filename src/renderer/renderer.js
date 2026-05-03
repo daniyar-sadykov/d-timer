@@ -233,26 +233,71 @@ modeTabs.forEach(t => {
   t.addEventListener('click', () => setMode(t.dataset.mode));
 });
 
-// Click on timer display in idle countdown/alarm to set value
-timerEl.addEventListener('click', async () => {
-  if (state.status !== 'idle') return;
-  if (state.mode === 'countdown') {
-    const input = window.prompt('Длительность (MM:SS или HH:MM:SS):', formatTime(state.countdownTargetMs).replace(/^00:/, ''));
-    if (input === null) return;
-    const ms = parseDuration(input);
-    if (ms === null) { window.alert('Неверный формат'); return; }
-    state.countdownTargetMs = ms;
-    await window.electronAPI.setConfig({ countdown_default_ms: ms });
-    refreshIdleDisplay();
-  } else if (state.mode === 'alarm') {
-    const input = window.prompt('Время будильника (HH:MM):', state.alarmTimeStr);
-    if (input === null) return;
-    const v = parseHHMM(input);
-    if (!v) { window.alert('Неверный формат'); return; }
-    state.alarmTimeStr = v;
-    await window.electronAPI.setConfig({ alarm_default_time: v });
-    refreshIdleDisplay();
+// Inline editor for countdown duration / alarm time
+const timerInput = document.getElementById('timer-input');
+let editingMode = null; // 'countdown' | 'alarm' | null
+
+function startEdit(mode) {
+  editingMode = mode;
+  if (mode === 'countdown') {
+    timerInput.value       = formatTime(state.countdownTargetMs).replace(/^00:/, '');
+    timerInput.placeholder = 'MM:SS or HH:MM:SS';
+  } else {
+    timerInput.value       = state.alarmTimeStr;
+    timerInput.placeholder = 'HH:MM';
   }
+  timerEl.classList.add('editing');
+  timerInput.classList.add('active');
+  timerInput.focus();
+  timerInput.select();
+}
+
+async function commitEdit() {
+  if (!editingMode) return;
+  const raw = timerInput.value;
+  const mode = editingMode;
+  editingMode = null;
+  timerInput.classList.remove('active');
+  timerEl.classList.remove('editing');
+
+  if (mode === 'countdown') {
+    const ms = parseDuration(raw);
+    if (ms !== null) {
+      state.countdownTargetMs = ms;
+      await window.electronAPI.setConfig({ countdown_default_ms: ms });
+    }
+  } else if (mode === 'alarm') {
+    const v = parseHHMM(raw);
+    if (v) {
+      state.alarmTimeStr = v;
+      await window.electronAPI.setConfig({ alarm_default_time: v });
+    }
+  }
+  refreshIdleDisplay();
+}
+
+function cancelEdit() {
+  if (!editingMode) return;
+  editingMode = null;
+  timerInput.classList.remove('active');
+  timerEl.classList.remove('editing');
+  refreshIdleDisplay();
+}
+
+timerEl.addEventListener('click', () => {
+  if (state.status !== 'idle') return;
+  if (state.mode === 'countdown' || state.mode === 'alarm') {
+    startEdit(state.mode);
+  }
+});
+
+timerInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter')      commitEdit();
+  else if (e.key === 'Escape') cancelEdit();
+});
+
+timerInput.addEventListener('blur', () => {
+  if (editingMode) commitEdit();
 });
 
 function finishCountdown() {
@@ -365,8 +410,12 @@ btnPause.addEventListener('click', () => {
 
 // ─── Button: Stop ─────────────────────────────────────────────────────────────
 btnStop.addEventListener('click', async () => {
+  const wasMode = state.mode;
+
   if (state.status === 'running') {
-    state.accumulatedMs += Date.now() - state.startWallTime;
+    if (wasMode !== 'alarm') {
+      state.accumulatedMs += Date.now() - state.startWallTime;
+    }
     clearInterval(state.intervalId);
     state.intervalId = null;
   }
@@ -376,35 +425,40 @@ btnStop.addEventListener('click', async () => {
   const sessionStart = state.sessionStart || new Date();
 
   // Reset state
-  state.status        = 'idle';
-  state.accumulatedMs = 0;
-  state.startWallTime = null;
-  state.sessionStart  = null;
+  state.status            = 'idle';
+  state.accumulatedMs     = 0;
+  state.startWallTime     = null;
+  state.sessionStart      = null;
+  state.alarmTargetWallMs = null;
 
   // Reset UI
-  timerEl.classList.remove('running', 'paused');
+  timerEl.classList.remove('running', 'paused', 'alarming');
   btnStart.disabled    = false;
   btnStart.textContent = '▶';
   btnStart.title       = 'Start';
   btnPause.disabled    = true;
   btnStop.disabled     = true;
-  btnWorklog.style.display = 'none';
-  if (state.worklogOpen) closeWorklog();
-  updateDisplay(0);
 
-  // Refresh worklog entries before building report
-  state.worklogEntries = await window.electronAPI.getWorklog();
+  if (wasMode === 'stopwatch') {
+    btnWorklog.style.display = 'none';
+    if (state.worklogOpen) closeWorklog();
+    updateDisplay(0);
 
-  // Send Telegram report (non-blocking)
-  const msg    = buildReport(sessionStart, sessionEnd, finalMs);
-  const result = await window.electronAPI.sendTelegram(msg);
+    // Refresh worklog entries before building report
+    state.worklogEntries = await window.electronAPI.getWorklog();
 
-  if (!result.ok) {
-    console.warn('[D-Timer] Telegram error:', result.error);
-    // Show brief error in settings status if settings are open
-    if (state.settingsOpen) {
-      setSettingsStatus('Telegram: ' + result.error, true);
+    // Send Telegram report (non-blocking)
+    const msg    = buildReport(sessionStart, sessionEnd, finalMs);
+    const result = await window.electronAPI.sendTelegram(msg);
+
+    if (!result.ok) {
+      console.warn('[D-Timer] Telegram error:', result.error);
+      if (state.settingsOpen) {
+        setSettingsStatus('Telegram: ' + result.error, true);
+      }
     }
+  } else {
+    refreshIdleDisplay();
   }
 });
 
