@@ -313,7 +313,7 @@ function startEdit(mode) {
   timerInput.value       = mode === 'countdown'
     ? formatTime(cd.targetMs).replace(/^00:/, '')
     : al.timeStr;
-  timerInput.placeholder = mode === 'countdown' ? 'MM:SS or HH:MM:SS' : 'HH:MM';
+  timerInput.placeholder = mode === 'countdown' ? 'MM:SS' : 'HH:MM';
   timerEl.classList.add('editing');
   timerInput.classList.add('active');
   timerInput.focus();
@@ -354,6 +354,24 @@ timerInput.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') commitEdit(); else if (e.key === 'Escape') cancelEdit();
 });
 timerInput.addEventListener('blur', () => { if (editingMode) commitEdit(); });
+
+timerInput.addEventListener('input', () => {
+  if (!editingMode) return;
+  const digits = timerInput.value.replace(/\D/g, '');
+  if (editingMode === 'alarm') {
+    // Format as HH:MM — max 4 digits
+    const d = digits.slice(0, 4);
+    timerInput.value = d.length > 2 ? `${d.slice(0, 2)}:${d.slice(2)}` : d;
+  } else {
+    // Format as MM:SS or HH:MM:SS — max 6 digits
+    const d = digits.slice(0, 6);
+    if (d.length <= 4) {
+      timerInput.value = d.length > 2 ? `${d.slice(0, 2)}:${d.slice(2)}` : d;
+    } else {
+      timerInput.value = `${d.slice(0, 2)}:${d.slice(2, 4)}:${d.slice(4)}`;
+    }
+  }
+});
 
 // ─── Button: Start / Resume ───────────────────────────────────────────────────
 btnStart.addEventListener('click', () => {
