@@ -3,11 +3,15 @@
 // ─── State ────────────────────────────────────────────────────────────────────
 const state = {
   status:        'idle',    // 'idle' | 'running' | 'paused'
+  mode:          'stopwatch', // 'stopwatch' | 'countdown' | 'alarm'
   startWallTime: null,      // Date.now() when current segment started
   accumulatedMs: 0,         // Total ms from all completed segments
   sessionStart:  null,      // Wall-clock time of the very first Start press
   intervalId:    null,
   hourlyRate:    20,
+  countdownTargetMs:  25 * 60 * 1000, // duration set for countdown
+  alarmTimeStr:       '18:00',         // 'HH:MM' for alarm
+  alarmTargetWallMs:  null,            // computed wall time for current alarm
   settingsOpen:  false,
   worklogOpen:   false,
   worklogEntries: []        // Today's entries cache
@@ -43,6 +47,9 @@ const inpWorklog        = document.getElementById('inp-worklog');
 const btnAddWorklog     = document.getElementById('btn-add-worklog');
 const worklogStatus     = document.getElementById('worklog-status');
 
+// Mode tabs
+const modeTabs = document.querySelectorAll('.mode-tab');
+
 // ─── Init ─────────────────────────────────────────────────────────────────────
 async function init() {
   const cfg = await window.electronAPI.getConfig();
@@ -50,7 +57,15 @@ async function init() {
   inpRate.value    = cfg.hourly_rate || 20;
   inpChat.value    = cfg.chat_id     || '';
   inpToken.value   = cfg.bot_token   || '';
-  updateDisplay(0);
+
+  if (cfg.countdown_default_ms && Number(cfg.countdown_default_ms) > 0) {
+    state.countdownTargetMs = Number(cfg.countdown_default_ms);
+  }
+  if (cfg.alarm_default_time && /^\d{2}:\d{2}$/.test(cfg.alarm_default_time)) {
+    state.alarmTimeStr = cfg.alarm_default_time;
+  }
+
+  refreshIdleDisplay();
 
   // Pre-load today's worklog entries for Telegram report
   state.worklogEntries = await window.electronAPI.getWorklog();
@@ -85,11 +100,224 @@ function updateDisplay(ms) {
 }
 
 function tick() {
-  updateDisplay(getElapsedMs());
+  if (state.mode === 'stopwatch') {
+    updateDisplay(getElapsedMs());
+    return;
+  }
+  if (state.mode === 'countdown') {
+    const remaining = state.countdownTargetMs - getElapsedMs();
+    if (remaining <= 0) {
+      timerEl.textContent    = '00:00:00';
+      earningsEl.textContent = `→ ${formatTime(state.countdownTargetMs)}`;
+      finishCountdown();
+    } else {
+      timerEl.textContent    = formatTime(remaining);
+      earningsEl.textContent = `→ ${formatTime(state.countdownTargetMs)}`;
+    }
+    return;
+  }
+  // alarm
+  const remaining = state.alarmTargetWallMs - Date.now();
+  if (remaining <= 0) {
+    timerEl.textContent = '00:00:00';
+    finishAlarm();
+  } else {
+    timerEl.textContent    = formatTime(remaining);
+    earningsEl.textContent = `→ ${state.alarmTimeStr}`;
+  }
+}
+
+// ─── Mode Helpers ─────────────────────────────────────────────────────────────
+
+function refreshIdleDisplay() {
+  timerEl.classList.remove('running', 'paused', 'alarming');
+  if (state.mode === 'stopwatch') {
+    timerEl.textContent          = '00:00:00';
+    earningsEl.textContent       = `$${calcEarnings(0)}`;
+    earningsEl.style.color       = '';
+    timerEl.classList.remove('editable');
+  } else if (state.mode === 'countdown') {
+    timerEl.textContent          = formatTime(state.countdownTargetMs);
+    earningsEl.textContent       = `→ ${formatTime(state.countdownTargetMs)}`;
+    earningsEl.style.color       = '';
+    timerEl.classList.add('editable');
+  } else {
+    timerEl.textContent          = '--:--:--';
+    earningsEl.textContent       = `→ ${state.alarmTimeStr}`;
+    earningsEl.style.color       = '';
+    timerEl.classList.add('editable');
+  }
+}
+
+function parseDuration(str) {
+  if (!str) return null;
+  const parts = str.trim().split(':').map(s => parseInt(s, 10));
+  if (parts.some(n => isNaN(n) || n < 0)) return null;
+  let h = 0, m = 0, s = 0;
+  if (parts.length === 1)      m = parts[0];
+  else if (parts.length === 2) [m, s] = parts;
+  else if (parts.length === 3) [h, m, s] = parts;
+  else return null;
+  const ms = ((h * 60 + m) * 60 + s) * 1000;
+  return ms > 0 ? ms : null;
+}
+
+function parseHHMM(str) {
+  if (!str) return null;
+  const m = str.trim().match(/^(\d{1,2}):(\d{2})$/);
+  if (!m) return null;
+  const h = parseInt(m[1], 10), mn = parseInt(m[2], 10);
+  if (h < 0 || h > 23 || mn < 0 || mn > 59) return null;
+  return `${String(h).padStart(2, '0')}:${String(mn).padStart(2, '0')}`;
+}
+
+function nextAlarmWallMs(hhmm) {
+  const [h, m] = hhmm.split(':').map(Number);
+  const target = new Date();
+  target.setHours(h, m, 0, 0);
+  if (target.getTime() <= Date.now()) {
+    target.setDate(target.getDate() + 1);
+  }
+  return target.getTime();
+}
+
+let audioCtx = null;
+function beep() {
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const playBeep = (offset) => {
+      const o = audioCtx.createOscillator();
+      const g = audioCtx.createGain();
+      o.connect(g); g.connect(audioCtx.destination);
+      o.frequency.value = 800;
+      o.type = 'sine';
+      g.gain.setValueAtTime(0, audioCtx.currentTime + offset);
+      g.gain.linearRampToValueAtTime(0.3, audioCtx.currentTime + offset + 0.02);
+      g.gain.linearRampToValueAtTime(0, audioCtx.currentTime + offset + 0.28);
+      o.start(audioCtx.currentTime + offset);
+      o.stop(audioCtx.currentTime + offset + 0.32);
+    };
+    playBeep(0); playBeep(0.4); playBeep(0.8);
+  } catch (e) { console.warn('[D-Timer] audio error', e); }
+}
+
+function triggerAlarmSignal(message) {
+  beep();
+  timerEl.classList.add('alarming');
+  setTimeout(() => timerEl.classList.remove('alarming'), 3500);
+  try {
+    if (typeof Notification !== 'undefined' && Notification.permission !== 'denied') {
+      new Notification('D-Timer', { body: message });
+    }
+  } catch (e) { /* ignore */ }
+}
+
+function setMode(newMode) {
+  if (state.status !== 'idle') {
+    // Visual hint: briefly flash active tab
+    const active = document.querySelector('.mode-tab.active');
+    if (active) {
+      active.style.transition = 'background 0.15s';
+      active.style.background = 'rgba(255, 95, 95, 0.3)';
+      setTimeout(() => { active.style.background = ''; }, 250);
+    }
+    return;
+  }
+  state.mode = newMode;
+  modeTabs.forEach(t => t.classList.toggle('active', t.dataset.mode === newMode));
+  refreshIdleDisplay();
+}
+
+modeTabs.forEach(t => {
+  t.addEventListener('click', () => setMode(t.dataset.mode));
+});
+
+// Click on timer display in idle countdown/alarm to set value
+timerEl.addEventListener('click', async () => {
+  if (state.status !== 'idle') return;
+  if (state.mode === 'countdown') {
+    const input = window.prompt('Длительность (MM:SS или HH:MM:SS):', formatTime(state.countdownTargetMs).replace(/^00:/, ''));
+    if (input === null) return;
+    const ms = parseDuration(input);
+    if (ms === null) { window.alert('Неверный формат'); return; }
+    state.countdownTargetMs = ms;
+    await window.electronAPI.setConfig({ countdown_default_ms: ms });
+    refreshIdleDisplay();
+  } else if (state.mode === 'alarm') {
+    const input = window.prompt('Время будильника (HH:MM):', state.alarmTimeStr);
+    if (input === null) return;
+    const v = parseHHMM(input);
+    if (!v) { window.alert('Неверный формат'); return; }
+    state.alarmTimeStr = v;
+    await window.electronAPI.setConfig({ alarm_default_time: v });
+    refreshIdleDisplay();
+  }
+});
+
+function finishCountdown() {
+  clearInterval(state.intervalId);
+  state.intervalId    = null;
+  state.status        = 'idle';
+  state.accumulatedMs = 0;
+  state.startWallTime = null;
+  state.sessionStart  = null;
+
+  btnStart.disabled    = false;
+  btnStart.textContent = '▶';
+  btnStart.title       = 'Start';
+  btnPause.disabled    = true;
+  btnStop.disabled     = true;
+
+  triggerAlarmSignal('Обратный отсчёт завершён');
+  setTimeout(refreshIdleDisplay, 3500);
+}
+
+function finishAlarm() {
+  clearInterval(state.intervalId);
+  state.intervalId       = null;
+  state.status           = 'idle';
+  state.alarmTargetWallMs = null;
+  state.sessionStart     = null;
+
+  btnStart.disabled    = false;
+  btnStart.textContent = '▶';
+  btnStart.title       = 'Start';
+  btnPause.disabled    = true;
+  btnStop.disabled     = true;
+
+  triggerAlarmSignal(`Будильник: ${state.alarmTimeStr}`);
+  setTimeout(refreshIdleDisplay, 3500);
 }
 
 // ─── Button: Start / Resume ───────────────────────────────────────────────────
 btnStart.addEventListener('click', () => {
+  // Alarm mode: arm the alarm based on current alarmTimeStr
+  if (state.mode === 'alarm') {
+    if (state.status !== 'idle') return;
+    if (!parseHHMM(state.alarmTimeStr)) {
+      window.alert('Установите время будильника (кликните на дисплей)');
+      return;
+    }
+    state.alarmTargetWallMs = nextAlarmWallMs(state.alarmTimeStr);
+    state.sessionStart      = new Date();
+    state.status            = 'running';
+    state.intervalId        = setInterval(tick, 500);
+    timerEl.classList.add('running');
+    timerEl.classList.remove('paused', 'editable');
+    btnStart.disabled = true;
+    btnPause.disabled = true; // pause makes no sense for wall-clock alarm
+    btnStop.disabled  = false;
+    tick();
+    return;
+  }
+
+  // Stopwatch + countdown share elapsed-based logic
+  if (state.mode === 'countdown' && state.status === 'idle' && state.countdownTargetMs <= 0) {
+    window.alert('Установите длительность (кликните на дисплей)');
+    return;
+  }
+
   if (state.status === 'idle') {
     state.sessionStart  = new Date();
     state.accumulatedMs = 0;
@@ -100,14 +328,17 @@ btnStart.addEventListener('click', () => {
   state.intervalId    = setInterval(tick, 500);
 
   timerEl.classList.add('running');
-  timerEl.classList.remove('paused');
+  timerEl.classList.remove('paused', 'editable');
 
   btnStart.disabled    = true;
   btnPause.disabled    = false;
   btnStop.disabled     = false;
   btnPause.textContent = '⏸';
   btnPause.title       = 'Pause';
-  btnWorklog.style.display = '';
+  if (state.mode === 'stopwatch') {
+    btnWorklog.style.display = '';
+  }
+  tick();
 });
 
 // ─── Button: Pause ────────────────────────────────────────────────────────────

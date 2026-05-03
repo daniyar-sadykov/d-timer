@@ -100,6 +100,49 @@ html, body {
   color: var(--danger);
 }
 
+/* ─── Mode Tabs ──────────────────────────────────────────────────────────────── */
+.mode-tabs {
+  position: absolute;
+  top: 10px;
+  left: 12px;
+  display: flex;
+  gap: 4px;
+}
+
+.mode-tab {
+  width: 20px;
+  height: 20px;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 11px;
+  line-height: 20px;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-dim);
+  transition: background 0.2s, color 0.2s, transform 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font);
+}
+
+.mode-tab:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--text-main);
+  transform: scale(1.15);
+}
+
+.mode-tab.active {
+  background: var(--accent-dim);
+  color: var(--accent);
+}
+
+.mode-tab:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
 /* ─── Timer Display ──────────────────────────────────────────────────────────── */
 .timer-display {
   font-size: 44px;
@@ -119,6 +162,30 @@ html, body {
 
 .timer-display.paused {
   color: var(--text-dim);
+}
+
+.timer-display.editable {
+  cursor: pointer;
+}
+
+.timer-display.editable:hover {
+  color: var(--accent);
+}
+
+.timer-display.alarming {
+  animation: alarm-pulse 0.5s ease-in-out 0s 6;
+  color: var(--accent);
+}
+
+@keyframes alarm-pulse {
+  0%, 100% {
+    text-shadow: 0 0 24px rgba(127, 255, 140, 0.2);
+    transform: scale(1);
+  }
+  50% {
+    text-shadow: 0 0 32px rgba(127, 255, 140, 0.9);
+    transform: scale(1.05);
+  }
 }
 
 /* ─── Earnings Display ───────────────────────────────────────────────────────── */

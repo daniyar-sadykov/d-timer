@@ -30,7 +30,13 @@
         <button class="ctrl-btn ctrl-close" id="btn-close" title="Close">×</button>
       </div>
 
-      <div class="timer-display" id="timer-display">00:00:00</div>
+      <div class="mode-tabs no-drag">
+        <button class="mode-tab active" data-mode="stopwatch" title="Stopwatch">⏱</button>
+        <button class="mode-tab" data-mode="countdown" title="Countdown">⏳</button>
+        <button class="mode-tab" data-mode="alarm" title="Alarm">⏰</button>
+      </div>
+
+      <div class="timer-display" id="timer-display" title="Click to set time">00:00:00</div>
       <div class="earnings-display" id="earnings-display">$0.00</div>
 
       <div class="controls no-drag">
