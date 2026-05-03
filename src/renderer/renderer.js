@@ -67,6 +67,11 @@ async function init() {
   updateButtons();
   updateTabIndicators();
 
+  // Request notification permission upfront so alerts fire without prompting
+  if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
+    Notification.requestPermission();
+  }
+
   // Pre-load today's worklog entries for Telegram report
   state.worklogEntries = await window.electronAPI.getWorklog();
 }
