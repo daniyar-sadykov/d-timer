@@ -2,6 +2,8 @@ node_modules/
 dist/
 config.json
 worklog.json
+notes.json
+To_dos.txt
 *.log
 .DS_Store
 Thumbs.db
