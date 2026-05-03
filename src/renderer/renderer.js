@@ -425,6 +425,7 @@ btnStop.addEventListener('click', async () => {
     if (state.worklogOpen) closeWorklog();
     state.worklogEntries = await window.electronAPI.getWorklog();
     const msg    = buildReport(sessionStart, sessionEnd, finalMs);
+    await window.electronAPI.setConfig({ lastStopTime: Date.now() });
     const result = await window.electronAPI.sendTelegram(msg);
     if (!result.ok) {
       console.warn('[D-Timer] Telegram error:', result.error);

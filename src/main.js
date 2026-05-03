@@ -139,11 +139,22 @@ ipcMain.handle('telegram:send', async (event, message) => {
 });
 
 // ─── Worklog Handlers ──────────────────────────────────────────────────────
-ipcMain.handle('worklog:get', () => worklog.getToday());
+ipcMain.handle('worklog:get', () => {
+  const cfg = config.read();
+  return worklog.getSince(cfg.lastStopTime || 0);
+});
 
-ipcMain.handle('worklog:add', (event, text) => worklog.addEntry(text));
+ipcMain.handle('worklog:add', (event, text) => {
+  worklog.addEntry(text);
+  const cfg = config.read();
+  return worklog.getSince(cfg.lastStopTime || 0);
+});
 
-ipcMain.handle('worklog:delete', (event, id) => worklog.deleteEntry(id));
+ipcMain.handle('worklog:delete', (event, id) => {
+  worklog.deleteEntry(id);
+  const cfg = config.read();
+  return worklog.getSince(cfg.lastStopTime || 0);
+});
 
 // ─── Notes Handlers ───────────────────────────────────────────────────────
 ipcMain.handle('notes:get', () => notes.getAll());

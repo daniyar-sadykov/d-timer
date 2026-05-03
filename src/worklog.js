@@ -40,9 +40,16 @@ function todayKey() {
     String(d.getDate()).padStart(2, '0');
 }
 
-function getToday() {
+function getSince(lastStopTime) {
   const all = readAll();
-  return all[todayKey()] || [];
+  const since = lastStopTime || 0;
+  const result = [];
+  for (const key of Object.keys(all).sort()) {
+    for (const entry of all[key]) {
+      if ((entry.timestamp || 0) > since) result.push(entry);
+    }
+  }
+  return result;
 }
 
 function addEntry(text) {
@@ -55,9 +62,10 @@ function addEntry(text) {
                String(now.getMinutes()).padStart(2, '0');
 
   all[key].push({
-    id:   crypto.randomBytes(3).toString('hex'),
-    text: text.trim(),
-    time
+    id:        crypto.randomBytes(3).toString('hex'),
+    text:      text.trim(),
+    time,
+    timestamp: Date.now()
   });
 
   writeAll(all);
@@ -66,12 +74,17 @@ function addEntry(text) {
 
 function deleteEntry(id) {
   const all = readAll();
-  const key = todayKey();
-  if (!all[key]) return [];
-
-  all[key] = all[key].filter(e => e.id !== id);
-  writeAll(all);
-  return all[key];
+  const keys = Object.keys(all);
+  for (const key of keys) {
+    const idx = all[key].findIndex(e => e.id === id);
+    if (idx !== -1) {
+      all[key].splice(idx, 1);
+      writeAll(all);
+      break;
+    }
+  }
+  // Return entries since lastStopTime — caller will pass it separately via IPC
+  return null;
 }
 
-module.exports = { getToday, addEntry, deleteEntry };
+module.exports = { getSince, addEntry, deleteEntry };
